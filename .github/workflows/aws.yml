@@ -38,5 +38,5 @@ jobs:
     - name: Copy files And create Invalidate
       run: |
         aws --version
-        aws s3 sync dist s3://${{ secrets.AWS_PRODUCTION_BUCKET_NAME }}/
+        aws s3 sync build s3://${{ secrets.AWS_PRODUCTION_BUCKET_NAME }}/
         aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION }} --paths "/index.html"
