@@ -6,8 +6,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'crazytrau.com',
-  tagline: 'Test github action',
+  title: 'crazytrau',
+  tagline: 'Huynh Thien Phuoc',
   url: 'https://docs.crazytrau.com',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -16,15 +16,15 @@ const config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'crazytrau', // Usually your GitHub org/user name.
+  projectName: 'docs.crazytrau.com', // Usually your repo name.
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
   // to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'vi'],
   },
 
   presets: [
@@ -37,15 +37,23 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/htphuocdl/docs.crazytrau.com/tree/main/packages/create-docusaurus/templates/shared/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/htphuocdl/docs.crazytrau.com/tree/main/packages/create-docusaurus/templates/shared/',
         },
+        // Will be passed to @docusaurus/plugin-content-pages (false to disable)
+        pages: {},
+        // // Will be passed to @docusaurus/plugin-content-sitemap (false to disable)
+        // sitemap: {},
+        // // Will be passed to @docusaurus/plugin-google-gtag (only enabled when explicitly specified)
+        // gtag: {},
+        // // Will be passed to @docusaurus/plugin-google-analytics (only enabled when explicitly specified)
+        // googleAnalytics: {},
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -69,9 +77,13 @@ const config = {
             position: 'left',
             label: 'Tutorial',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          { to: '/blog', label: 'Blog', position: 'left' },
           {
-            href: 'https://github.com/facebook/docusaurus',
+            type: 'localeDropdown',
+            position: 'right',
+          },
+          {
+            href: 'https://github.com/htphuocdl/docs.crazytrau.com',
             label: 'GitHub',
             position: 'right',
           },
@@ -89,23 +101,23 @@ const config = {
               },
             ],
           },
-          {
-            title: 'Community',
-            items: [
-              {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
-              },
-              {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'Twitter',
-                href: 'https://twitter.com/docusaurus',
-              },
-            ],
-          },
+          // {
+          //   title: 'Community',
+          //   items: [
+          //     {
+          //       label: 'Stack Overflow',
+          //       href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+          //     },
+          //     {
+          //       label: 'Discord',
+          //       href: 'https://discordapp.com/invite/docusaurus',
+          //     },
+          //     {
+          //       label: 'Twitter',
+          //       href: 'https://twitter.com/docusaurus',
+          //     },
+          //   ],
+          // },
           {
             title: 'More',
             items: [
@@ -115,7 +127,7 @@ const config = {
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
+                href: 'https://github.com/htphuocdl/docs.crazytrau.com',
               },
             ],
           },
