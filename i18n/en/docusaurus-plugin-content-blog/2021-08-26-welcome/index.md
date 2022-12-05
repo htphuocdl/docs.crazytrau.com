@@ -1,6 +1,6 @@
 ---
 slug: welcome
-title: Welcome VI
+title: Welcome EN
 authors: [crazytrau]
 tags: [crazytrau, docusaurus]
 ---
