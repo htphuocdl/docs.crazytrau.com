@@ -3,6 +3,10 @@
     "message": "Next",
     "description": "The label for version current"
   },
+  "sidebar.tutorialSidebar.category.Docusaurus-Guides": {
+    "message": "Docusaurus-Guides",
+    "description": "The label for category Docusaurus-Guides in sidebar tutorialSidebar"
+  },
   "sidebar.tutorialSidebar.category.Tutorial - Basics": {
     "message": "Tutorial - Basics",
     "description": "The label for category Tutorial - Basics in sidebar tutorialSidebar"
@@ -14,5 +18,13 @@
   "sidebar.tutorialSidebar.category.Tutorial - Extras": {
     "message": "Tutorial - Extras",
     "description": "The label for category Tutorial - Extras in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Projects": {
+    "message": "Projects",
+    "description": "The label for category Projects in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Budget": {
+    "message": "Budget",
+    "description": "The label for category Budget in sidebar tutorialSidebar"
   }
 }
