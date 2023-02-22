@@ -24,7 +24,7 @@ const config = {
   // to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'vi',
-    locales: ['en', 'vi'],
+    locales: ['vi', 'en'],
     localeConfigs: {
       en: {
         htmlLang: 'en-GB',
@@ -45,14 +45,14 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/htphuocdl/docs.crazytrau.com/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/htphuocdl/docs.crazytrau.com/tree/d/prod/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/htphuocdl/docs.crazytrau.com/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/htphuocdl/docs.crazytrau.com/tree/d/prod/',
         },
         // Will be passed to @docusaurus/plugin-content-pages (false to disable)
         pages: {},
@@ -83,7 +83,7 @@ const config = {
             type: 'doc',
             docId: 'intro',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Docs',
           },
           { to: '/blog', label: 'Blog', position: 'left' },
           {
@@ -104,7 +104,7 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
+                label: 'Docs',
                 to: '/docs/intro',
               },
             ],
