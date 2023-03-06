@@ -9,9 +9,6 @@ tags: [crazytrau, docusaurus, plantuml, markdown]
 1. Tạo mới 1 UML 
 
     - [http://plantuml.com](http://plantuml.com/plantuml/form)
-    <details>
-        <embed src="http://plantuml.com/plantuml/form" style="width:100%; height: 500px;">
-    </details>
 
 2. Nhập UML 
     - Copy mẫu từ link [Declaring participant](https://plantuml.com/sequence-diagram#5d2ed256d73a7298)
