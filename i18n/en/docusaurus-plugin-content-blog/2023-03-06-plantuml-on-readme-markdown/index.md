@@ -9,9 +9,6 @@ tags: [crazytrau, docusaurus, plantuml, markdown]
 1. Ceate new UML 
 
     - [http://plantuml.com](http://plantuml.com/plantuml/form)
-	<details>
-        <embed src="http://plantuml.com/plantuml/form" style="width:100%; height: 500px;">
-    </details>
 
 2. Fill UML 
     - Copy example from link [Declaring participant](https://plantuml.com/sequence-diagram#5d2ed256d73a7298)
