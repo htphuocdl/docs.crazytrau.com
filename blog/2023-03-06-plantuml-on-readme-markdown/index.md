@@ -25,7 +25,7 @@ tags: [crazytrau, docusaurus, plantuml, markdown]
 ## Kết quả
 ![PlantUML model](http://www.plantuml.com/plantuml/dsvg/JOyzJWCn44RxESLSW8By91852WIeGU824wyBIuudsECYjsVNNrQQAUodxrNlr4ogzMkcs_oda6vIZByTI-ClLP9WMXdtvXZwcIxQooJrlcplZk4t5BHOrSpBdHt3RoaMItRdSPzWvtSqYSb5Mbos3yVmUmgQSmoMj3G-EuO_q5-FFJBknp7yaUQ7drv72x_mhpA2tRx1leOwiuLv93gnWq2Rs_VOroPd3Z2knidZSAE4Jh5C_Ph_0G00)
 
-# Tính năng của plantuml.com ([Xem thêm](https://plantuml.com/))
+## Tính năng của plantuml.com ([Xem thêm](https://plantuml.com/))
 Diagrams are defined using a simple and intuitive language. (see PlantUML Language Reference Guide).
 New users can read the quick start page. There is also a F.A.Q. page. PlantUML can be used within many other tools.
 Images can be generated in PNG, in SVG or in LaTeX format. It is also possible to generate ASCII art diagrams (only for sequence diagrams).
@@ -63,6 +63,6 @@ Images can be generated in PNG, in SVG or in LaTeX format. It is also possible t
     -   Sprite icons
     -   AsciiMath mathematical expressions
 
-# Reference sources:
+## Reference sources:
 - https://stackoverflow.com/a/32771815
 - https://plantuml.com/
