@@ -1,6 +1,6 @@
 ---
 slug: how-to-export-network-process
-title: How to export network process
+title: Cách xuất network process trên browser
 authors: [crazytrau]
 tags: [crazytrau, docusaurus, devtool, performance]
 ---
