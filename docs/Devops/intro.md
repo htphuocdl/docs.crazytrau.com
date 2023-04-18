@@ -5,9 +5,11 @@ slug: Ops-for-developer
 
 # Ops for developer Hi Phuoc
 
+Hi moi nguoi
+
 ## Tạo sao Dev cần biết Ops
 
-### Lý do
+### Lý do 
 - infastructure as code
 - cloud
 - opensource chất lượng quá nhiều 
