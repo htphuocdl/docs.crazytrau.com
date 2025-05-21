@@ -1,9 +1,11 @@
 ---
 slug: welcome
-title: Welcome VI
+title: Hi ni
 authors: [crazytrau]
 tags: [crazytrau, docusaurus]
 ---
+
+Tui ne
 
 [Docusaurus blogging features](https://docusaurus.io/docs/blog) are powered by the [blog plugin](https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-blog).
 
