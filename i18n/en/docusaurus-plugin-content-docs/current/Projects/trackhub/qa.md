@@ -22,3 +22,4 @@ sidebar_label: QA & Testing
 ## Performance
 
 - k6/JMeter for backend; RN profiler for frontend.
+

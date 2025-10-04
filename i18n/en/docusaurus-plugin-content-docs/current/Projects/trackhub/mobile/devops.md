@@ -17,3 +17,4 @@ sequenceDiagram
 ## CI/CD (planned)
 
 - Lint/Typecheck/Test → Build iOS/Android → OTA/Store.
+

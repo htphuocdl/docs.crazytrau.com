@@ -19,3 +19,4 @@ sidebar_label: Tech Stack
 ## Backend (planned)
 
 - GraphQL/REST gateway, microservices (Auth, User, Payment...), message broker.
+
