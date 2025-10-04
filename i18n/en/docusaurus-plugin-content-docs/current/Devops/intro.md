@@ -20,7 +20,7 @@ slug: Ops-for-developer
 |search|elasticsearch,db|
 |alert|prometheous alert|
 |visualize|grafana, kibana, tabler|
-|notification|...|
+|notification|SNS, pinpoint|
 |data| SQL -> postgreSQL,mySQL|
 ||noSQL -> mongoDB, redis, cockroachDB|
 ||timeseries -> prometheous|
@@ -59,7 +59,8 @@ CI - CD
 
 ### K8S
 
-![image](https://bl6pap004files.storage.live.com/y4m-Tjy2Tlo5q241sGlC15IT2s7KMhRW1AVYE53sS6RkaOBcm1aAg5zbBWzfMsmHrU5VtGnfahXfoLKmKOjxtVZajg2ANQTJem-Mg2CHzbAZTzJvBIU2aQEeKn1U9Kr8GvGIiJnORDoKepJOl7xgIhqVB7IupY94nTuJpOgmHMofb7eQlg_dMqSCmg_rFcf9zKd?width=880&height=524&cropmode=none)
+![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396146&authkey=%21AC8QTOYuqL6nBQA&width=1024&height=999999)
+*https://medium.com/devops-mojo/kubernetes-architecture-overview-introduction-to-k8s-architecture-and-understanding-k8s-cluster-components-90e11eb34ccd*
 
 [Chi tiết](https://dev.to/alex_barashkov/microservices-vs-monolith-architecture-4l1m)
 
