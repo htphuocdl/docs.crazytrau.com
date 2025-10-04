@@ -9,16 +9,16 @@ importers:
   .:
     dependencies:
       '@docusaurus/core':
-        specifier: ^2.3.1
+        specifier: ^2.4.1
         version: 2.4.3(@docusaurus/types@2.4.3(react-dom@17.0.2(react@17.0.2))(react@17.0.2))(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(typescript@5.9.3)
       '@docusaurus/plugin-content-pages':
-        specifier: ^2.3.1
+        specifier: ^2.4.1
         version: 2.4.3(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(typescript@5.9.3)
       '@docusaurus/plugin-pwa':
-        specifier: ^2.3.1
+        specifier: ^2.4.1
         version: 2.4.3(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(typescript@5.9.3)
       '@docusaurus/preset-classic':
-        specifier: ^2.3.1
+        specifier: ^2.4.1
         version: 2.4.3(@algolia/client-search@5.39.0)(@types/react@19.2.0)(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(search-insights@2.17.3)(typescript@5.9.3)
       '@docusaurus/theme-mermaid':
         specifier: ^2.3.1
@@ -5538,7 +5538,7 @@ snapshots:
   '@babel/plugin-proposal-object-rest-spread@7.12.1(@babel/core@7.12.9)':
     dependencies:
       '@babel/core': 7.12.9
-      '@babel/helper-plugin-utils': 7.10.4
+      '@babel/helper-plugin-utils': 7.27.1
       '@babel/plugin-syntax-object-rest-spread': 7.8.3(@babel/core@7.12.9)
       '@babel/plugin-transform-parameters': 7.27.7(@babel/core@7.12.9)
 
@@ -7270,7 +7270,7 @@ snapshots:
 
   '@types/sax@1.2.7':
     dependencies:
-      '@types/node': 17.0.45
+      '@types/node': 24.6.2
 
   '@types/send@0.17.5':
     dependencies:
