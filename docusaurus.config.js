@@ -27,7 +27,7 @@ const config = {
     locales: ['vi', 'en'],
     localeConfigs: {
       en: {
-        htmlLang: 'en-GB',
+        htmlLang: 'en-US',
       },
       vi: {
         htmlLang: 'vi-VN',
@@ -192,12 +192,12 @@ const config = {
         },
   
         // Optional: Algolia search parameters
-        searchParameters: {},
+        searchParameters: {
+          facetFilters: [],
+        },
   
         // Optional: path for search page that enabled by default (`false` to disable it)
         searchPagePath: 'search',
-  
-        //... other Algolia params
       },
     }),
 };
