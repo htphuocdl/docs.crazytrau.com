@@ -33,3 +33,4 @@ sequenceDiagram
   UI->>Svc: getServices()
   Svc-->>UI: services list
 ```
+

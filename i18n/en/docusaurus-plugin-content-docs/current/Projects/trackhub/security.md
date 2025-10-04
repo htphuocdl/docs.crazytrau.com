@@ -22,3 +22,4 @@ sidebar_label: Security & Compliance
 ## Application Security Practices
 
 - Measures: secure storage, certificate pinning (planned), jailbreak/root detection (as needed).
+

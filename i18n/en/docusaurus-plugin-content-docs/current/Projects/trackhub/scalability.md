@@ -19,3 +19,4 @@ sidebar_label: Scalability & Reliability
 ## Availability & DR
 
 - Multi-AZ/region (planned), regular backup/restore, clear RTO/RPO.
+
