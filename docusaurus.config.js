@@ -27,7 +27,7 @@ const config = {
     locales: ['vi', 'en'],
     localeConfigs: {
       en: {
-        htmlLang: 'en-GB',
+        htmlLang: 'en-US',
       },
       vi: {
         htmlLang: 'vi-VN',
@@ -35,6 +35,10 @@ const config = {
     },
   },
 
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
   presets: [
     [
       'classic',
@@ -67,6 +71,26 @@ const config = {
         },
       }),
     ],
+  ],
+
+  plugins: [
+    function cytoscapeAliasPlugin() {
+      return {
+        name: 'cytoscape-alias-plugin',
+        configureWebpack() {
+          return {
+            resolve: {
+              alias: {
+                // Some mermaid versions deep-import cytoscape UMD file which is not exported;
+                // map it to the package root entry instead.
+                'cytoscape/dist/cytoscape.umd.js': require.resolve('cytoscape'),
+                'cytoscape/dist/cytoscape.min.js': require.resolve('cytoscape'),
+              },
+            },
+          };
+        },
+      };
+    },
   ],
 
   themeConfig:
@@ -168,12 +192,12 @@ const config = {
         },
   
         // Optional: Algolia search parameters
-        searchParameters: {},
+        searchParameters: {
+          facetFilters: [],
+        },
   
         // Optional: path for search page that enabled by default (`false` to disable it)
         searchPagePath: 'search',
-  
-        //... other Algolia params
       },
     }),
 };

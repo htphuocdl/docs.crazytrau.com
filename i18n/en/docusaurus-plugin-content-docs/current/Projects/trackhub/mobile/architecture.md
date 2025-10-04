@@ -1,0 +1,35 @@
+---
+id: architecture
+title: Mobile Architecture
+sidebar_label: Architecture
+---
+
+## Module & Navigation
+
+```mermaid
+flowchart TD
+  Tabs(TabsNavigator) --> Home
+  Tabs --> Services
+  Tabs --> Tasks
+  Tabs --> Account
+  Services --> ServicesScreen
+  Services --> ServiceContext
+  ServiceContext --> authCtx
+```
+
+## Service Display Data Flow
+
+```mermaid
+sequenceDiagram
+  participant UI as ServicesScreen
+  participant Ctx as ServiceContext
+  participant Auth as authCtx
+  participant Fac as ServiceServiceFactory
+  participant Svc as LocalServiceService
+  UI->>Ctx: useServices().authData
+  UI->>Auth: authData.authCtx
+  UI->>Fac: getInstance().getService('local')
+  Fac->>Svc: construct/load
+  UI->>Svc: getServices()
+  Svc-->>UI: services list
+```

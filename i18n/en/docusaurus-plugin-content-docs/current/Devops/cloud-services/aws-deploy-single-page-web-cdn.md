@@ -7,27 +7,27 @@ slug: docs/Devops/cloud-services/aws-deploy-single-page-web-cdn.md
 
 ## Quick start
 
-- Tạo S3 bucket
+- Create S3 bucket
 - Upload static web to bucket
-- Tạo Cloudfront distribution
-- Tạo Route53 Hosted zones
+- Create CloudFront distribution
+- Create Route53 Hosted zones
 
-## Chi tiết
+## Details
 
-### Tạo S3 bucket
-#### Tạo bucket
+### Create S3 bucket
+#### Create bucket
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396117&authkey=%21AC8QTOYuqL6nBQA&width=1808&height=984)
 *Sample: https://s3.console.aws.amazon.com/s3/home?region=ap-southeast-1#*
-- (1) Bấm tạo bucket 
+- (1) Click create bucket
 
-#### Điền form
+#### Fill form
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396118&authkey=%21AC8QTOYuqL6nBQA&width=999999&height=1024)
 *Sample: https://s3.console.aws.amazon.com/s3/bucket/create?region=ap-southeast-1*
-- (1) Tên bucket
-- (2) Tạo bucket
+- (1) Bucket name
+- (2) Create bucket
 
 ### Upload static web to bucket
-#### Tạo html
+#### Create html
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396119&authkey=%21AC8QTOYuqL6nBQA&width=1076&height=331)
 
 #### Upload html
@@ -37,51 +37,51 @@ slug: docs/Devops/cloud-services/aws-deploy-single-page-web-cdn.md
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396121&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=979)
 *Sample: https://s3.console.aws.amazon.com/s3/upload/demo.crazytrau.com?region=ap-southeast-1*
 
-### Tạo Cloudfront distribution
-#### Tạo create distribution
+### Create CloudFront distribution
+#### Create distribution
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396122&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=1129)
 
-#### Điền form distribution
+#### Fill distribution form
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396123&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=4944)
-- (1) chọn s3 bucket
-- (2) tên
+- (1) select s3 bucket
+- (2) name
 - (3) OAI to access S3 bucket
-- (4) chọn tạo OAI
-- (5) tạo OAI
-- (6) tự động update bucket policy 
-- (7) tự động chuyển http -> https 
-- (8) kích hoạt security protections
-- (9) nhập CNAME
-- (10) chọn SSL certificate (nếu không có tạo bằng [Certificate Manager](https://aws.amazon.com/certificate-manager/))
-- (11) root object khi truy cập `\`
-- (12) tạo
+- (4) select create OAI
+- (5) create OAI
+- (6) automatically update bucket policy 
+- (7) automatically redirect http -> https 
+- (8) enable security protections
+- (9) enter CNAME
+- (10) select SSL certificate (if not available create via [Certificate Manager](https://aws.amazon.com/certificate-manager/))
+- (11) root object when accessing `\`
+- (12) create
 
-#### Tạo thành công
+#### Create successfully
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396126&authkey=%21AC8QTOYuqL6nBQA&width=1816&height=1016)
-- (1) Trạng thái của distribution (chuyển về `Enabled` để sử dụng)
+- (1) Distribution status (change to `Enabled` to use)
 
-#### Tạo cloudfront error page
+#### Create cloudfront error page
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396124&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=1016)
 
-#### Điền form error page
+#### Fill error page form
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396125&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=979)
 - (1) status 403
-- (2) chọn custom error response 
-- (3) nếu dùng SPA các router sẽ chuyển về index.html còn dùng SSR thì sẽ truy cập theo route static pages
+- (2) select custom error response 
+- (3) if using SPA routers will redirect to index.html, if using SSR will access static pages by route
 
-### Tạo Route53 Hosted zones 
-#### Tạo hosted zones record
+### Create Route53 Hosted zones 
+#### Create hosted zones record
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396127&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=1599)
 
 
-#### Điền form hosted zones record
+#### Fill hosted zones record form
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396129&authkey=%21AC8QTOYuqL6nBQA&width=1817&height=980)
 - (1) domain/ subdomain
-- (2) alias -> sử dụng AWS resource
-- (3) chọn loại cloudfront distribution
-- (4) chọn distribution đã tạo
-- (5) tạo
+- (2) alias -> use AWS resource
+- (3) select cloudfront distribution type
+- (4) select created distribution
+- (5) create
 
-### Kết quả
+### Result
 ![image](https://onedrive.live.com/embed?resid=7697E3973F0F969B%21396128&authkey=%21AC8QTOYuqL6nBQA&width=1909&height=1051)
 *Sample: https://demo.crazytrau.com*
