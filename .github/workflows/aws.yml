@@ -20,13 +20,14 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     
-    - name: Yarn Install
+    - name: Pnpm Install
       run: |
-        yarn install
+        npm install -g pnpm
+        pnpm install
 
     - name: Production Build
       run: |
-        yarn build
+        pnpm build
         
     - name: Configure AWS credentials from Test account
       uses: aws-actions/configure-aws-credentials@v1
