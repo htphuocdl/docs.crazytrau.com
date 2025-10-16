@@ -10,20 +10,24 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [20.x]
         
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'pnpm'
     
-    - name: Pnpm Install
-      run: |
-        npm install -g pnpm
-        pnpm install
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.18.3
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
 
     - name: Production Build
       run: |
