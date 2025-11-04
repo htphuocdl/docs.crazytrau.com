@@ -10,10 +10,10 @@ This section contains detailed epic breakdown, task tracking, checklists, and ac
 
 ## Epic Overview
 
-**Status**: `IN_PROGRESS[]` (Backend Foundation Completed)  
+**Status**: `IN_PROGRESS[]` (Backend + Frontend SDK Foundation Completed)  
 **Priority**: `URGENT[]` (High)  
 **Epic ID**: `EPIC-OFFLINE-001`  
-**Progress**: ~15% (Backend foundation partially completed)
+**Progress**: ~25% (Backend foundation + Frontend SDK foundation completed)
 
 Comprehensive offline-first architecture implementation for the trackhub super app ecosystem using GraphQL CRUD with local-first data synchronization.
 
@@ -30,7 +30,7 @@ Comprehensive offline-first architecture implementation for the trackhub super a
 ## Phases
 
 ### Phase 0: Foundation
-**Status**: `IN_PROGRESS[]` (Partial - Backend conventions completed ✅)  
+**Status**: `IN_PROGRESS[]` (Partial - Backend + Frontend SDK conventions completed ✅)  
 **Estimated**: 2-3 weeks  
 **Dependencies**: None
 
@@ -40,13 +40,14 @@ Establish foundational infrastructure: local database setup, data conventions, o
 
 **Key Deliverables**:
 - ⏳ WatermelonDB setup with encryption (Pending - Mobile team)
-- ✅ Base schema definitions (Backend schema conventions completed)
+- ✅ Base schema definitions (Backend + Frontend SDK schema conventions completed)
 - ⏳ Outbox manager API (Pending - Mobile team)
 - ⏳ Network detection system (Pending - Mobile team)
 - ⏳ Sync worker skeleton (Pending - Mobile team)
 
 **Completed**:
-- ✅ BE-0.1: Global Data Conventions defined and implemented
+- ✅ BE-0.1: Global Data Conventions defined and implemented (Backend)
+- ✅ RN-0.0: Frontend SDK Types and Services updated (Frontend)
 
 ---
 
@@ -210,22 +211,42 @@ All epics and tasks use the following status tags:
 
 ## Current Progress Summary
 
-### ✅ Completed (Backend Foundation)
+### ✅ Completed (Backend + Frontend SDK Foundation)
 
-**Data Conventions & Schema:**
+**Backend - Data Conventions & Schema:**
 - ✅ Global data conventions defined (clientId, version, updatedAt, isDeleted)
 - ✅ CrtBaseEntity updated with Offline-First fields
 - ✅ All Prisma base-fields.prisma files updated (3 services: core, user, sample)
 - ✅ All proto files updated (8 entity messages: Space, Group, SocialUser, Social, ConfigCrt x2, Hero, Company)
 - ✅ Generate model scripts updated (3 services)
 
-**Backend Repository Logic:**
+**Backend - Repository Logic:**
 - ✅ Auto-increment `version` in `updateOne` method (server-controlled)
 - ✅ Auto-increment `version` in `deleteOne` method (soft delete)
 - ✅ Always set `updatedAt` to server time (override client timestamps)
 - ✅ Default `version = 1` for new entities in `createOne`
 - ✅ Idempotent create operations via `clientId` (find existing entity by clientId)
 - ✅ `findOneByClientId` method added (repository and service layers)
+
+**Frontend SDK - Types & Interfaces:**
+- ✅ `CrtBaseEntity` interface updated with `_clientId?: string` and `_version?: number`
+- ✅ `ICrtBaseService` interface updated to support `_clientId` in `addItem()`
+- ✅ Entity defaults utility created (`packages/sdk/src/utils/entityDefaults.ts`):
+  - `generateClientId()`: Generates temporary client IDs
+  - `getDefaultEntityValues()`: Returns defaults including `_clientId` and `_version: 1`
+  - `createEntityWithDefaults()`: Helper for creating entities
+
+**Frontend SDK - LocalServices Updates (9 services across 5 packages):**
+- ✅ `coreCrt`: LocalSpaceService, LocalGroupService, LocalIdentityService, LocalConfigCrtService
+- ✅ `checklist`: LocalChecklistService
+- ✅ `auth`: LocalSpaceService
+- ✅ `sampleCrt`: LocalIdentityService, LocalConfigCrtService
+- ✅ `keezy`: LocalIdentityService
+- ✅ All create operations: Auto-generate `_clientId` and set `_version: 1`
+- ✅ All update operations: Auto-increment `_version` (currentVersion + 1)
+- ✅ All delete/softDelete/restore operations: Auto-increment `_version`
+- ✅ Toggle operations: Auto-increment `_version`
+- ✅ Parent version increments when adding child items
 
 ### ⏳ In Progress / Pending
 

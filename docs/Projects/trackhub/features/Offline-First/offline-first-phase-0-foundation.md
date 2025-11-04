@@ -53,6 +53,50 @@ Establish the foundational infrastructure for offline-first architecture. This i
 
 ---
 
+### RN-0.0: Update Frontend SDK Types and Services
+
+**Status**: `TODO[x]` ✅  
+**Owner**: Frontend Team Lead  
+**Effort**: 3 days
+
+**Description**: Update frontend SDK types and LocalServices to support offline-first fields and default value generation.
+
+**Checklist**:
+- [x] Update `CrtBaseEntity` interface in SDK with `_clientId?: string` and `_version?: number`
+- [x] Update `ICrtBaseService` interface to support `_clientId` in addItem
+- [x] Create `entityDefaults.ts` utility with `getDefaultEntityValues()` function
+- [x] Create `generateClientId()` function for offline creates
+- [x] Update all LocalServices to use `getDefaultEntityValues()` in create operations
+- [x] Update all LocalServices to auto-increment `_version` in update/delete operations
+- [x] Update `ChildSpaceForm` to use default values
+
+**Acceptance Criteria**:
+- ✅ All entity interfaces include `_clientId` and `_version` fields
+- ✅ All LocalServices generate default values automatically
+- ✅ Version increments on all update/delete operations
+- ✅ ClientId is generated for offline creates
+
+**Completed**:
+- ✅ Updated `CrtBaseEntity` interface in `packages/sdk/src/types/index.ts` with `_clientId?: string` and `_version?: number`
+- ✅ Updated `ICrtBaseService.addItem()` signature to support `_clientId`
+- ✅ Created `packages/sdk/src/utils/entityDefaults.ts` with:
+  - `generateClientId()`: Generates temporary client IDs (`tmp-{timestamp}-{random}`)
+  - `getDefaultEntityValues()`: Returns defaults including `_clientId` and `_version: 1`
+  - `createEntityWithDefaults()`: Helper function for creating entities
+- ✅ Updated all LocalServices (9 services across 5 packages):
+  - `coreCrt`: LocalSpaceService, LocalGroupService, LocalIdentityService, LocalConfigCrtService
+  - `checklist`: LocalChecklistService
+  - `auth`: LocalSpaceService
+  - `sampleCrt`: LocalIdentityService, LocalConfigCrtService
+  - `keezy`: LocalIdentityService
+- ✅ All create operations now use `getDefaultEntityValues()` with auto-generated `_clientId` and `_version: 1`
+- ✅ All update operations auto-increment `_version` (currentVersion + 1)
+- ✅ All delete/softDelete/restore operations auto-increment `_version`
+- ✅ Toggle operations (toggleItem, toggleCollapse) auto-increment `_version`
+- ✅ Parent entity version increments when adding child items
+
+---
+
 ### RN-0.1: Setup WatermelonDB Infrastructure
 
 **Status**: `TODO[]`  

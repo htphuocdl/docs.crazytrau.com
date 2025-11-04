@@ -9,7 +9,7 @@ sidebar_label: "Offline-First Architecture"
 ## Epic Overview
 
 **Epic ID**: `EPIC-OFFLINE-001`  
-**Status**: `IN_PROGRESS[]` (Backend Foundation Completed)  
+**Status**: `IN_PROGRESS[]` (Backend + Frontend SDK Foundation Completed)  
 **Priority**: `URGENT[]` (High)  
 **Owner**: TBD  
 **Start Date**: TBD  
@@ -48,7 +48,7 @@ Implement a comprehensive offline-first architecture for the trackhub super app 
 ## Epic Breakdown
 
 ### Phase 0: Foundation
-**Status**: `IN_PROGRESS[]` (Partial - BE-0.1 completed ✅)  
+**Status**: `IN_PROGRESS[]` (Partial - BE-0.1 ✅ + RN-0.0 ✅ completed)  
 **Dependencies**: None  
 **Estimated Effort**: 2-3 weeks
 
@@ -164,6 +164,8 @@ Default strategy per domain:
 ### Internal Dependencies
 - ✅ GraphQL schema updates (CrtBaseEntity updated with clientId and version)
 - ✅ Backend repository logic (version increment, clientId handling implemented)
+- ✅ Frontend SDK types and interfaces (CrtBaseEntity, ICrtBaseService updated)
+- ✅ Frontend LocalServices (all 9 services updated with defaults and versioning)
 - ⏳ Backend sync endpoints implementation (GraphQL syncPull/syncPush endpoints pending)
 - ⏳ Mobile app architecture refactoring (WatermelonDB setup pending)
 - ⏳ Mini-apps adaptation to offline-first patterns (Pending)
@@ -199,11 +201,12 @@ gantt
 
 ## Progress Tracking
 
-**Overall Progress**: ~15% (Backend foundation partially completed)
+**Overall Progress**: ~25% (Backend foundation + Frontend SDK foundation completed)
 
-- [x] Phase 0: Foundation (Partial - BE-0.1 completed ✅)
-  - ✅ BE-0.1: Global Data Conventions defined and implemented
-- [ ] Phase 1: Basic Sync (Partial - BE-1.3 completed ✅, BE-1.2 backend logic ready)
+- [x] Phase 0: Foundation (Partial - BE-0.1 ✅ + RN-0.0 ✅ completed)
+  - ✅ BE-0.1: Global Data Conventions defined and implemented (Backend)
+  - ✅ RN-0.0: Frontend SDK Types and Services updated (Frontend)
+- [ ] Phase 1: Basic Sync (Partial - BE-1.3 ✅ + BE-1.2 backend logic ready)
   - ✅ BE-1.3: Versioning & Timestamp Management implemented
   - ✅ BE-1.2: Backend repository logic for syncPush ready (GraphQL endpoint pending)
 - [ ] Phase 2: Robustness
@@ -225,6 +228,16 @@ gantt
 - ✅ Idempotent create operations via clientId
 - ✅ findOneByClientId method for sync mapping
 - ✅ Version increment on soft delete
+
+**Frontend SDK Foundation:**
+- ✅ CrtBaseEntity interface updated with `_clientId?: string` and `_version?: number`
+- ✅ ICrtBaseService interface updated to support `_clientId` in addItem
+- ✅ Entity defaults utility created (`getDefaultEntityValues`, `generateClientId`)
+- ✅ All LocalServices updated (9 services across 5 packages):
+  - Auto-generate `_clientId` and `_version: 1` on create
+  - Auto-increment `_version` on update/delete/restore/toggle operations
+  - Server-controlled versioning pattern established
+- ✅ ChildSpaceForm updated to use default values
 
 ## Related Documentation
 
