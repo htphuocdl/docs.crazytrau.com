@@ -71,43 +71,117 @@ type SyncPullResponse {
 - Consider using change feed / CDC if available
 - Filter out soft-deleted items based on `isDeleted` flag
 
+**Implementation Details**:
+
+1. **GraphQL Schema Definition**:
+   - Add to `backend/libs/gw.graphql/src/prisma/schema.graphql` or create custom resolver
+   - Use `@nestjs/graphql` decorators for type definitions
+   - Consider using `GraphQLJSON` scalar type for `items: [JSON!]!`
+
+2. **Resolver Implementation**:
+   - Create custom resolver: `backend/apps/crt.svc.core/src/sync/sync-pull.resolver.ts`
+   - Use NestJS `@Query()` decorator
+   - Inject repository service for entity access
+   - Implement entity type routing (e.g., "Space" → SpaceRepository)
+
+3. **Query Logic**:
+   ```typescript
+   @Query(() => SyncPullResponse)
+   async syncPull(
+     @Args('entity') entity: string,
+     @Args('since', { nullable: true, type: () => Date }) since?: Date,
+     @Args('limit', { defaultValue: 1000 }) limit: number,
+     @Context() ctx: any,
+   ): Promise<SyncPullResponse> {
+     // 1. Get repository for entity type
+     const repo = this.getRepositoryForEntity(entity);
+     
+     // 2. Query with filters: updatedAt > since, limit, order by updatedAt
+     const items = await repo.findMany({
+       where: {
+         updatedAt: since ? { gt: since } : undefined,
+         // Filter soft-deleted if needed
+       },
+       take: limit + 1, // Fetch one extra to check hasMore
+       orderBy: { updatedAt: 'asc' },
+     });
+     
+     // 3. Check hasMore
+     const hasMore = items.length > limit;
+     const resultItems = hasMore ? items.slice(0, limit) : items;
+     
+     // 4. Return response with server timestamp
+     return {
+       items: resultItems,
+       lastSyncAt: new Date(), // Server time
+       hasMore,
+     };
+   }
+   ```
+
+4. **Database Indexes**:
+   - Ensure indexes exist on `updatedAt` and `version` columns
+   - Add migration if needed: `CREATE INDEX idx_entity_updated_at ON table_name(_updatedAt)`
+
+5. **Authorization**:
+   - Use existing auth guards (e.g., `@UseGuards(JwtAuthGuard)`)
+   - Filter by user context (spaceId, tenantId, etc.)
+   - Validate entity access permissions
+
 ---
 
 ### BE-1.2: Implement GraphQL syncPush Endpoint
 
-**Status**: `TODO[]` (Partial - Backend logic ready)  
+**Status**: `IN_PROGRESS[]` (Base layer implementation completed ✅, GraphQL resolver pending)  
 **Owner**: Backend Team Lead  
 **Effort**: 6 days
 
 **Description**: Create GraphQL mutation endpoint for bulk push of client changes.
 
 **Checklist**:
-- [ ] Define `SyncResultItem` and `SyncPushInput` types
-- [ ] Implement `syncPush` mutation resolver
-- [ ] Accept array of items as JSON
-- [ ] Validate entity type via `entity` parameter
-- [ ] Process items in batch (transactional where possible)
-- [x] Map `clientId` to server `id` for new entities (✅ Implemented in createOne)
-- [x] Increment `version` on updates (✅ Implemented in updateOne)
-- [x] Update `updatedAt` with server timestamp (✅ Implemented in updateOne)
-- [ ] Return per-item `SyncResultItem` with success/error
-- [x] Handle idempotency (dedupe by `clientId` or `clientMutationId`) (✅ Implemented in createOne)
-- [ ] Add authorization checks (validate ownership)
+- [x] Define `SyncResultItem` interface (✅ Implemented in internal-repo.ts)
+- [ ] Implement `syncPush` mutation resolver (GraphQL layer)
+- [x] Accept array of items as JSON (✅ Base layer ready)
+- [ ] Validate entity type via `entity` parameter (GraphQL resolver)
+- [x] Process items in batch (transactional where possible) (✅ Implemented in base layer)
+- [x] Map `clientId` to server `id` for new entities (✅ Implemented in syncPush)
+- [x] Increment `version` on updates (✅ Implemented in syncPush)
+- [x] Update `updatedAt` with server timestamp (✅ Implemented in syncPush)
+- [x] Return per-item `SyncResultItem` with success/error (✅ Implemented in base layer)
+- [x] Handle idempotency (dedupe by `clientId`) (✅ Implemented in syncPush)
+- [x] Handle soft delete operations (✅ Implemented in syncPush)
+- [ ] Add authorization checks (validate ownership) (GraphQL resolver)
 - [ ] Write unit tests
 
 **Acceptance Criteria**:
-- [ ] Accepts array of items successfully
-- [ ] Returns per-item status
-- ✅ Maps `clientId` → `id` correctly (createOne handles clientId lookup)
-- ✅ Handles idempotency (no duplicates) (createOne checks for existing clientId)
-- [ ] Batch processing < 2s for 100 items (p95)
+- [x] Base layer accepts array of items successfully (✅ syncPush method implemented)
+- [x] Returns per-item status (✅ SyncResultItem interface and return)
+- ✅ Maps `clientId` → `id` correctly (syncPush handles clientId lookup)
+- ✅ Handles idempotency (no duplicates) (syncPush checks for existing clientId)
+- ✅ Handles create, update, and delete operations (✅ All three implemented)
+- [ ] GraphQL endpoint exposes syncPush (GraphQL resolver pending)
+- [ ] Batch processing < 2s for 100 items (p95) (Needs testing)
 
-**Partial Completion**:
-- ✅ `createOne` method handles `clientId` for idempotent creates (finds existing entity by clientId)
-- ✅ `updateOne` method auto-increments `version` and sets `updatedAt` to server time
-- ✅ `findOneByClientId` method added to repository and service layers
-- ✅ `deleteOne` method increments `version` on soft delete
-- ⏳ GraphQL endpoint implementation pending (BE-1.2 remaining work)
+**Completed Base Layer Implementation**:
+- ✅ `syncPush` method added to `internal-repo.ts`:
+  - Processes multiple items in single transaction
+  - Handles create (via clientId), update (via id), and delete (via isDeleted flag)
+  - Auto-increments version on updates and deletes
+  - Sets updatedAt to server time
+  - Returns per-item SyncResultItem with success/error
+  - Handles idempotency for creates (checks existing by clientId)
+- ✅ `syncPush` method added to `internal-service.ts`:
+  - Wraps repository syncPush method
+  - Sets request context
+- ✅ `SyncResultItem` interface exported from base layer
+- ✅ All items processed in transaction for atomicity
+- ✅ Error handling per-item (continues processing on error)
+
+**Remaining Work**:
+- ⏳ GraphQL resolver implementation (BE-1.2 GraphQL layer)
+- ⏳ Entity type routing factory/service
+- ⏳ Authorization checks in GraphQL layer
+- ⏳ Unit tests
 
 **GraphQL Schema**:
 ```graphql
@@ -147,6 +221,70 @@ input SyncPushInput {
   ]
 }
 ```
+
+**Implementation Details**:
+
+**✅ Base Layer Implementation (Completed)**:
+- Location: `backend/libs/crt.lib.common/src/common/base/internal-repo.ts`
+- Method: `syncPush(items: any[], ctx: IInternalPrismaRepo): Promise<SyncResultItem[]>`
+- Service wrapper: `backend/libs/crt.lib.common/src/common/base/internal-service.ts`
+- Features:
+  - Processes all items in single Prisma transaction
+  - Handles create (via clientId), update (via id), and delete (via isDeleted)
+  - Auto-increments version and sets server timestamps
+  - Returns per-item SyncResultItem with success/error
+  - Idempotent creates (checks existing by clientId)
+  - Error handling per-item (continues on error)
+
+**⏳ GraphQL Layer Implementation (Pending)**:
+
+1. **GraphQL Schema Definition**:
+   - Add to GraphQL schema with `@nestjs/graphql` decorators
+   - Use `GraphQLJSON` scalar for flexible item payloads
+   - Import `SyncResultItem` from base layer
+
+2. **Resolver Implementation**:
+   - Create custom resolver: `backend/apps/crt.svc.core/src/sync/sync-push.resolver.ts`
+   - Use NestJS `@Mutation()` decorator
+   - Call service.syncPush() method (base layer handles transaction)
+
+3. **Mutation Logic**:
+   ```typescript
+   @Mutation(() => [SyncResultItem])
+   async syncPush(
+     @Args('entity') entity: string,
+     @Args('items', { type: () => GraphQLJSON }) items: any[],
+     @Context() ctx: any,
+   ): Promise<SyncResultItem[]> {
+     // Get service for entity type
+     const service = this.getServiceForEntity(entity);
+     
+     // Build context from GraphQL context
+     const internalCtx = {
+       tenantId: ctx.req.user?.tenantId,
+       requestId: ctx.req.id,
+       // ... other context fields
+     };
+     
+     // Call base layer syncPush (handles transaction and all logic)
+     return service.syncPush(items, internalCtx);
+   }
+   ```
+
+4. **Entity Type Routing**:
+   - Create factory/service to map entity string to service
+   - Example: `"Space"` → `SpaceService`, `"Group"` → `GroupService`
+   - Validate entity type exists before processing
+
+5. **Authorization**:
+   - Validate ownership (spaceId, tenantId match user context)
+   - Reject items from unauthorized spaces/tenants
+   - Use existing auth guards (e.g., `@UseGuards(JwtAuthGuard)`)
+
+6. **Performance Optimization**:
+   - Base layer already uses Prisma transactions
+   - Consider batch size limits (max 100 per request) in GraphQL resolver
+   - Monitor performance metrics
 
 ---
 
