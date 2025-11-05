@@ -6,7 +6,7 @@ sidebar_label: "Phase 1: Basic Sync"
 
 # Phase 1: Basic Sync
 
-**Status**: `TODO[]`  
+**Status**: `IN_PROGRESS[]` (Backend GraphQL endpoints completed ✅ for Space entity, Frontend GraphQL service ready ✅)  
 **Phase ID**: `EPIC-OFFLINE-001-P1`  
 **Dependencies**: Phase 0 completed  
 **Estimated Effort**: 3-4 weeks  
@@ -15,6 +15,8 @@ sidebar_label: "Phase 1: Basic Sync"
 ## Overview
 
 Implement the core sync functionality: GraphQL sync endpoints on backend, client pull/push logic, and basic conflict handling. This phase establishes the fundamental sync mechanism.
+
+**Progress**: ~60% (Backend GraphQL endpoints + Frontend GraphQL service completed for Space entity)
 
 ## Objectives
 
@@ -28,30 +30,30 @@ Implement the core sync functionality: GraphQL sync endpoints on backend, client
 
 ### BE-1.1: Implement GraphQL syncPull Endpoint
 
-**Status**: `TODO[]`  
+**Status**: `TODO[x]` ✅ (Completed for Space entity)  
 **Owner**: Backend Team Lead  
 **Effort**: 5 days
 
 **Description**: Create GraphQL query endpoint for incremental pull of changes since last sync.
 
 **Checklist**:
-- [ ] Define `SyncPullResponse` type in GraphQL schema
-- [ ] Implement `syncPull` query resolver
-- [ ] Add `since` parameter (DateTime) for incremental pull
-- [ ] Add `limit` parameter (default 1000) for pagination
-- [ ] Optimize query with indexes on `updatedAt` and `version`
-- [ ] Return `lastSyncAt` (server timestamp)
-- [ ] Return `hasMore` flag for pagination
-- [ ] Support multiple entity types via `entity` parameter
-- [ ] Add authorization checks
-- [ ] Write unit tests
+- [x] Define `SyncPullResponse` type in GraphQL schema (✅ Defined in Space controller)
+- [x] Implement `syncPull` query resolver (✅ Base controller + Space resolver)
+- [x] Add `since` parameter (DateTime) for incremental pull (✅ Implemented)
+- [x] Add `limit` parameter (default 1000) for pagination (✅ Implemented)
+- [ ] Optimize query with indexes on `updatedAt` and `version` (Pending - database indexes)
+- [x] Return `lastSyncAt` (server timestamp) (✅ Implemented)
+- [x] Return `hasMore` flag for pagination (✅ Implemented)
+- [x] Support multiple entity types via `entity` parameter (✅ Base controller supports all entities)
+- [x] Add authorization checks (✅ Uses getCallerByCtx for role-based access)
+- [ ] Write unit tests (Pending)
 
 **Acceptance Criteria**:
-- Returns only changes since `since` timestamp
-- Respects `limit` parameter
-- Returns `hasMore` correctly
-- Includes `lastSyncAt` server timestamp
-- Query performance < 500ms for 1000 items (p95)
+- ✅ Returns only changes since `since` timestamp (Implemented)
+- ✅ Respects `limit` parameter (Implemented)
+- ✅ Returns `hasMore` correctly (Implemented)
+- ✅ Includes `lastSyncAt` server timestamp (Implemented)
+- ⏳ Query performance < 500ms for 1000 items (p95) (Needs performance testing with indexes)
 
 **GraphQL Schema**:
 ```graphql
@@ -132,35 +134,35 @@ type SyncPullResponse {
 
 ### BE-1.2: Implement GraphQL syncPush Endpoint
 
-**Status**: `IN_PROGRESS[]` (Base layer implementation completed ✅, GraphQL resolver pending)  
+**Status**: `TODO[x]` ✅ (Completed for Space entity - Base layer + GraphQL resolver)  
 **Owner**: Backend Team Lead  
 **Effort**: 6 days
 
 **Description**: Create GraphQL mutation endpoint for bulk push of client changes.
 
 **Checklist**:
-- [x] Define `SyncResultItem` interface (✅ Implemented in internal-repo.ts)
-- [ ] Implement `syncPush` mutation resolver (GraphQL layer)
-- [x] Accept array of items as JSON (✅ Base layer ready)
-- [ ] Validate entity type via `entity` parameter (GraphQL resolver)
+- [x] Define `SyncResultItem` interface (✅ Implemented in Space controller)
+- [x] Implement `syncPush` mutation resolver (GraphQL layer) (✅ Space resolver implemented)
+- [x] Accept array of items as JSON (✅ Base layer + GraphQL resolver)
+- [x] Validate entity type via `entity` parameter (✅ Entity-specific resolvers)
 - [x] Process items in batch (transactional where possible) (✅ Implemented in base layer)
 - [x] Map `clientId` to server `id` for new entities (✅ Implemented in syncPush)
-- [x] Increment `version` on updates (✅ Implemented in syncPush)
-- [x] Update `updatedAt` with server timestamp (✅ Implemented in syncPush)
+- [x] Increment `version` on updates (✅ Implemented in syncPush via caller)
+- [x] Update `updatedAt` with server timestamp (✅ Implemented in syncPush via caller)
 - [x] Return per-item `SyncResultItem` with success/error (✅ Implemented in base layer)
 - [x] Handle idempotency (dedupe by `clientId`) (✅ Implemented in syncPush)
 - [x] Handle soft delete operations (✅ Implemented in syncPush)
-- [ ] Add authorization checks (validate ownership) (GraphQL resolver)
-- [ ] Write unit tests
+- [x] Add authorization checks (validate ownership) (✅ Uses getCallerByCtx for role-based access)
+- [ ] Write unit tests (Pending)
 
 **Acceptance Criteria**:
-- [x] Base layer accepts array of items successfully (✅ syncPush method implemented)
-- [x] Returns per-item status (✅ SyncResultItem interface and return)
-- ✅ Maps `clientId` → `id` correctly (syncPush handles clientId lookup)
-- ✅ Handles idempotency (no duplicates) (syncPush checks for existing clientId)
-- ✅ Handles create, update, and delete operations (✅ All three implemented)
-- [ ] GraphQL endpoint exposes syncPush (GraphQL resolver pending)
-- [ ] Batch processing < 2s for 100 items (p95) (Needs testing)
+- ✅ Base layer accepts array of items successfully (syncPush method implemented)
+- ✅ Returns per-item status (SyncResultItem interface and return)
+- ✅ Maps `clientId` → `id` correctly (syncPush handles clientId via caller createOne)
+- ✅ Handles idempotency (no duplicates) (via caller createOne which checks existing)
+- ✅ Handles create, update, and delete operations (All three implemented via caller methods)
+- ✅ GraphQL endpoint exposes syncPush (Space resolver implemented)
+- ⏳ Batch processing < 2s for 100 items (p95) (Needs performance testing)
 
 **Completed Base Layer Implementation**:
 - ✅ `syncPush` method added to `internal-repo.ts`:
@@ -177,11 +179,26 @@ type SyncPullResponse {
 - ✅ All items processed in transaction for atomicity
 - ✅ Error handling per-item (continues processing on error)
 
+**Completed GraphQL Layer Implementation**:
+- ✅ Base controller `syncPush` method implemented (uses caller CRUD methods - createOne/updateOne/deleteOne)
+- ✅ Base controller `syncPull` method implemented (uses caller get method with updatedAt filter)
+- ✅ Space controller `syncPush_` GraphQL mutation resolver (wired to base method)
+- ✅ Space controller `syncPull_` GraphQL query resolver (wired to base method)
+- ✅ Authorization via `getCallerByCtx` (role-based access control)
+- ✅ Frontend GraphQL service methods added (`syncPush` and `syncPull`)
+- ✅ Frontend GraphQL queries/mutations defined (SYNC_PUSH_SPACE, SYNC_PULL_SPACE)
+- ✅ SpaceService interface updated with sync methods
+
+**Implementation Note**: The syncPush implementation uses the existing caller CRUD methods (createOne, updateOne, deleteOne) rather than directly accessing the repository layer. This ensures:
+- Proper authorization and role-based access control
+- Consistent error handling and logging
+- Version management via caller methods
+- Compatibility with the existing architecture
+
 **Remaining Work**:
-- ⏳ GraphQL resolver implementation (BE-1.2 GraphQL layer)
-- ⏳ Entity type routing factory/service
-- ⏳ Authorization checks in GraphQL layer
-- ⏳ Unit tests
+- ⏳ Database indexes for performance optimization
+- ⏳ Unit tests for sync operations
+- ⏳ Extend to other entities (currently implemented for Space)
 
 **GraphQL Schema**:
 ```graphql
