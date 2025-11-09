@@ -32,20 +32,54 @@ Enhance sync reliability with comprehensive conflict resolution, idempotency gua
 **Owner**: Backend Team Lead  
 **Effort**: 5 days
 
-**Description**: Detect conflicts when client and server have diverged.
+**Description**: Detect conflicts when client and server have diverged. **CRITICAL**: Use timestamp-based conflict detection (best practice like Notion/Linear).
 
 **Checklist**:
-- [ ] Detect conflicts: server.version == client.version but different data
-- [ ] Detect conflicts: server.version > client.version but client changed after lastSync
-- [ ] Create `ConflictPayload` type with serverData, clientData, serverVersion
+- [ ] **Detect conflicts: server.updatedAt > local.updatedAt** (server wins - auto-resolve)
+- [ ] **Detect conflicts: local.updatedAt > server.updatedAt** (local wins - auto-resolve)
+- [ ] **Detect conflicts: equal timestamp but different data** (user resolve)
+- [ ] **Detect conflicts: version mismatch** (user resolve)
+- [ ] Create `ConflictPayload` type with serverData, clientData, serverVersion, localVersion, timestamps
 - [ ] Return conflict payload in `SyncResultItem` when conflict detected
 - [ ] Add conflict detection per field (optional, for granular merges)
 - [ ] Write unit tests for conflict detection
 
 **Acceptance Criteria**:
-- Conflicts are detected accurately
+- Conflicts are detected accurately using timestamp comparison
+- Auto-resolve works for timestamp-based conflicts (server newer → server wins, local newer → local wins)
+- User resolution required for equal timestamps
 - Conflict payload contains all necessary data
 - No false positives or negatives
+
+**Conflict Detection Logic**:
+```typescript
+function detectConflict(localRecord: any, serverRecord: any): ConflictRecord | null {
+  // Case 1: Server timestamp newer → server wins (auto-resolve)
+  if (serverRecord.updatedAt > localRecord.updatedAt) {
+    return null; // No conflict, server wins
+  }
+  
+  // Case 2: Local timestamp newer → local wins (auto-resolve)
+  if (localRecord.updatedAt > serverRecord.updatedAt) {
+    return null; // No conflict, local wins
+  }
+  
+  // Case 3: Equal timestamp but different data → user resolve
+  if (
+    localRecord.updatedAt === serverRecord.updatedAt &&
+    JSON.stringify(localRecord) !== JSON.stringify(serverRecord)
+  ) {
+    return { conflictType: 'timestamp', ... };
+  }
+  
+  // Case 4: Version mismatch → user resolve
+  if (localRecord.version !== serverRecord.version) {
+    return { conflictType: 'version', ... };
+  }
+  
+  return null; // No conflict
+}
+```
 
 **GraphQL Schema Addition**:
 ```graphql
@@ -246,11 +280,14 @@ const calculateBackoff = (attempt: number): number => {
 **Owner**: Mobile Team Lead  
 **Effort**: 5 days
 
-**Description**: Create UI components for manual conflict resolution.
+**Description**: Create UI components for manual conflict resolution. **CRITICAL**: Build thin diff modal (not fancy rich diff), show only fields changed.
 
 **Checklist**:
 - [ ] Create conflict list screen
 - [ ] Create conflict detail screen showing server vs client data
+- [ ] **Build record diff modal (thin, lightweight)** (⏳ Pending)
+- [ ] **Show only fields changed** (⏳ Pending - no fancy rich diff)
+- [ ] **Side-by-side comparison** (⏳ Pending)
 - [ ] Implement "accept server" action
 - [ ] Implement "keep client" action
 - [ ] Implement "merge manually" action (if applicable)
@@ -263,6 +300,25 @@ const calculateBackoff = (attempt: number): number => {
 - Users can resolve conflicts
 - Conflicts are clearly indicated
 - Resolution actions work correctly
+- Diff modal is lightweight and shows only changed fields
+
+**UI Design**:
+```
+┌─────────────────────────────────────────┐
+│ Conflict Resolution                    │
+├─────────────────────────────────────────┤
+│ Record: Space "My Workspace"            │
+│                                         │
+│ Field: name                             │
+│ ┌─────────────┬─────────────┐          │
+│ │ Local       │ Server      │          │
+│ ├─────────────┼─────────────┤          │
+│ │ "My Space"  │ "Workspace" │          │
+│ └─────────────┴─────────────┘          │
+│                                         │
+│ [Keep Local] [Use Server] [Merge]      │
+└─────────────────────────────────────────┘
+```
 
 ---
 

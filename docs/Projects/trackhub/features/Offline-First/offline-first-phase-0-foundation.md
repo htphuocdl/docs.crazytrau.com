@@ -99,11 +99,11 @@ Establish the foundational infrastructure for offline-first architecture. This i
 
 ### RN-0.1: Setup WatermelonDB Infrastructure
 
-**Status**: `TODO[x]` ✅  
+**Status**: `IN_PROGRESS[]` (Basic setup ✅, Multi-tenant pending)  
 **Owner**: Mobile Team Lead  
 **Effort**: 5 days
 
-**Description**: Install and configure WatermelonDB with SQLite adapter and encryption support.
+**Description**: Install and configure WatermelonDB with SQLite adapter and encryption support. **CRITICAL**: Support multi-tenant architecture with one DB per tenant.
 
 **Checklist**:
 - [x] Install WatermelonDB and dependencies (✅ Completed)
@@ -112,6 +112,10 @@ Establish the foundational infrastructure for offline-first architecture. This i
 - [x] Configure database location (✅ Secure app directory via WatermelonDB)
 - [x] Test database creation and basic operations (✅ Ready for testing)
 - [x] Implement database encryption key management (✅ Keychain integration ready)
+- [ ] **Implement multi-tenant DB isolation** (⏳ Pending - each tenant needs separate DB instance)
+- [ ] **Database naming by tenantId** (⏳ Pending - `trackhub_db_{tenantId}`)
+- [ ] **Tenant switching logic** (⏳ Pending - initialize new DB when switching tenants)
+- [ ] **Drop DB on tenant logout** (⏳ Pending - cleanup tenant data)
 
 **Acceptance Criteria**:
 - Database initializes successfully on app start
@@ -180,17 +184,19 @@ Establish the foundational infrastructure for offline-first architecture. This i
 
 ### RN-0.2: Define Base Schema Structure
 
-**Status**: `TODO[x]` ✅  
+**Status**: `IN_PROGRESS[]` (Basic schema ✅, Operation queue pending)  
 **Owner**: Mobile Team Lead  
 **Effort**: 3 days
 
-**Description**: Create WatermelonDB schema for core tables (entities, outbox, uploads).
+**Description**: Create WatermelonDB schema for core tables (entities, operation_queue, uploads, sync_state, conflicts).
 
 **Checklist**:
 - [x] Define base entity schema structure (✅ Ready for entity tables)
-- [x] Create `outbox` table schema (✅ Completed in schema.ts)
+- [x] Create `outbox` table schema (✅ Completed in schema.ts - **NOTE**: Will be replaced by `operation_queue`)
+- [ ] **Create `operation_queue` table schema** (⏳ Pending - replaces outbox with operation type)
 - [x] Create `uploads` table schema (✅ Completed in schema.ts)
-- [x] Create `sync_state` table schema (✅ Completed in schema.ts)
+- [x] Create `sync_state` table schema (✅ Completed in schema.ts - **NOTE**: Add `serverVersionHash` field)
+- [ ] **Create `conflicts` table schema** (⏳ Pending - for user conflict resolution)
 - [x] Implement schema migrations strategy (✅ WatermelonDB migrations ready)
 - [ ] Write migration scripts for version upgrades (Will be added when needed)
 
@@ -288,23 +294,28 @@ export const outboxSchema = {
 
 ---
 
-### RN-0.3: Implement Outbox Manager API
+### RN-0.3: Implement Operation Queue Manager API
 
-**Status**: `TODO[x]` ✅  
+**Status**: `IN_PROGRESS[]` (OutboxService ✅, OperationQueue pending)  
 **Owner**: Mobile Team Lead  
 **Effort**: 4 days
 
-**Description**: Create API to add mutations to outbox queue.
+**Description**: Create API to manage operation queue (replaces outbox). Queue tracks insert/update/delete operations.
 
 **Checklist**:
-- [x] Implement `enqueueMutation(entity, payload)` function (✅ OutboxService.enqueueMutation)
-- [x] Generate `clientId` for new entities (✅ Uses entityDefaults.generateClientId)
-- [x] Store mutation payload as JSON in outbox (✅ JSON.stringify in payload field)
+- [x] Implement `enqueueMutation(entity, payload)` function (✅ OutboxService.enqueueMutation - **NOTE**: Will migrate to OperationQueue)
+- [ ] **Implement `OperationQueue.enqueue(operation, entity, entityId, payload)`** (⏳ Pending)
+- [ ] **Support operation types: insert, update, delete** (⏳ Pending)
+- [x] Generate `clientId` for new entities (✅ Uses entityDefaults.generateClientId - **NOTE**: Must use UUID v7)
+- [ ] **Update to use UUID v7 instead of tmp- prefix** (⏳ Pending - see RN-0.6)
+- [x] Store mutation payload as JSON (✅ JSON.stringify in payload field)
 - [x] Set initial status to 'pending' (✅ Default status)
-- [x] Update outbox item status helpers (✅ markSuccess, markFailed, markSending, updateStatus)
+- [x] Update item status helpers (✅ markSuccess, markFailed, markSending, updateStatus)
 - [x] Implement query methods for pending items (✅ getPendingItems, getItemsByStatus)
+- [ ] **Group operations by entity type** (⏳ Pending - for batching)
+- [ ] **Batch operations (max 100 per batch)** (⏳ Pending)
 - [x] Additional utilities (✅ getPendingCount, clearOldSuccessItems, deleteItem)
-- [ ] Write unit tests for outbox operations (Pending)
+- [ ] Write unit tests for operation queue (Pending)
 
 **Acceptance Criteria**:
 - Mutations can be enqueued successfully
@@ -453,18 +464,19 @@ async function enqueueMutation(entity: string, payload: any) {
 **Owner**: Mobile Team Lead  
 **Effort**: 3 days
 
-**Description**: Create background sync worker that checks network and processes outbox.
+**Description**: Create background sync worker that checks network and processes operation queue.
 
 **Checklist**:
 - [x] Create SyncWorker class (✅ SyncWorker class implemented)
 - [x] Implement basic worker lifecycle (start, stop) (✅ start/stop methods)
 - [x] Add network check before processing (✅ NetworkService integration)
-- [x] Implement basic outbox polling mechanism (✅ Polling with configurable interval)
+- [x] Implement basic queue polling mechanism (✅ Polling with configurable interval)
 - [x] Add app state awareness (foreground/background) (✅ AppState listener)
 - [x] Create worker configuration (poll interval, batch size) (✅ SyncWorkerConfig)
 - [x] Add basic logging for debugging (✅ Console logs)
 - [x] Status management and listeners (✅ Status subscription)
 - [x] Singleton pattern (✅ getSyncWorker function)
+- [ ] **Add sync triggers: app open, 5min interval, network regained** (⏳ Pending)
 - [ ] Integrate actual sync logic (Phase 1 - syncPush/syncPull)
 
 **Acceptance Criteria**:
@@ -480,21 +492,110 @@ async function enqueueMutation(entity: string, payload: any) {
 
 ---
 
-### DOC-0.1: Document Architecture & Conventions
+### RN-0.6: Implement UUID v7 Client ID Generation
 
 **Status**: `TODO[]`  
+**Owner**: Mobile Team Lead  
+**Effort**: 2 days
+
+**Description**: Replace tmp- prefix client IDs with UUID v7 for clean identity merge.
+
+**Checklist**:
+- [ ] Install UUID v7 library (`uuidv7` package)
+- [ ] Create `generateClientId()` function using UUID v7
+- [ ] Update `entityDefaults.ts` to use UUID v7
+- [ ] Update all LocalServices to use UUID v7
+- [ ] Remove tmp- prefix generation
+- [ ] Test UUID v7 generation and uniqueness
+- [ ] Write unit tests
+
+**Acceptance Criteria**:
+- All offline creates use UUID v7 format
+- No random numeric IDs
+- UUID v7 is time-ordered for better indexing
+- Clean identity merge on sync
+
+**Implementation**:
+```typescript
+import { uuidv7 } from 'uuidv7';
+
+export function generateClientId(): string {
+  return uuidv7(); // Returns UUID v7 string (e.g., "01234567-89ab-7def-0123-456789abcdef")
+}
+```
+
+---
+
+### RN-0.7: Implement Multi-Tenant DB Isolation
+
+**Status**: `TODO[]`  
+**Owner**: Mobile Team Lead  
+**Effort**: 4 days
+
+**Description**: Implement per-tenant database instances for strict data isolation.
+
+**Checklist**:
+- [ ] Create `getDatabaseForTenant(tenantId)` function
+- [ ] Implement database naming: `trackhub_db_{tenantId}`
+- [ ] Create tenant switching logic (initialize new DB)
+- [ ] Implement `dropTenantDatabase(tenantId)` for logout cleanup
+- [ ] Update database initialization to accept tenantId
+- [ ] Test tenant isolation (no cross-tenant data access)
+- [ ] Test tenant switching
+- [ ] Test DB cleanup on logout
+- [ ] Write unit tests
+
+**Acceptance Criteria**:
+- Each tenant has separate DB instance
+- No cross-tenant data access
+- Tenant switching works correctly
+- DB cleanup on logout works
+
+**Implementation**:
+```typescript
+const tenantDatabases = new Map<string, Database>();
+
+export function getDatabaseForTenant(tenantId: string): Database {
+  if (!tenantDatabases.has(tenantId)) {
+    const dbName = `trackhub_db_${tenantId}`;
+    const db = new Database({
+      adapter: new SQLiteAdapter({ schema, dbName }),
+      modelClasses: [OperationQueue, Upload, SyncState, ...entityModels],
+    });
+    tenantDatabases.set(tenantId, db);
+  }
+  return tenantDatabases.get(tenantId)!;
+}
+
+export async function dropTenantDatabase(tenantId: string): Promise<void> {
+  const db = tenantDatabases.get(tenantId);
+  if (db) {
+    // Implementation depends on WatermelonDB API
+    await db.adapter.schema.dropDatabase(`trackhub_db_${tenantId}`);
+    tenantDatabases.delete(tenantId);
+  }
+}
+```
+
+---
+
+### DOC-0.1: Document Architecture & Conventions
+
+**Status**: `TODO[x]` ✅ (Architecture design document created)  
 **Owner**: Tech Lead  
 **Effort**: 2 days
 
 **Description**: Create comprehensive documentation for offline-first architecture.
 
 **Checklist**:
-- [ ] Document architecture overview
-- [ ] Document data conventions
+- [x] Document architecture overview (✅ Architecture design document created)
+- [x] Document data conventions (✅ In epic and architecture docs)
 - [ ] Create entity schema template
 - [ ] Document migration strategy
 - [ ] Create developer guide for adding new entities
-- [ ] Document outbox usage patterns
+- [ ] Document operation queue usage patterns
+- [ ] Document multi-tenant architecture
+- [ ] Document UUID v7 usage
 
 **Acceptance Criteria**:
 - Documentation is complete and accessible

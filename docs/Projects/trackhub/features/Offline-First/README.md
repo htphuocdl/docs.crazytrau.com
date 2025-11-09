@@ -10,10 +10,10 @@ This section contains detailed epic breakdown, task tracking, checklists, and ac
 
 ## Epic Overview
 
-**Status**: `IN_PROGRESS[]` (Backend GraphQL Endpoints + Frontend GraphQL Service Completed for Space)  
+**Status**: `IN_PROGRESS[]` (Backend GraphQL Endpoints + Frontend GraphQL Service + OfflineFirstSpaceService Completed for Space)  
 **Priority**: `URGENT[]` (High)  
 **Epic ID**: `EPIC-OFFLINE-001`  
-**Progress**: ~55% (Backend foundation + Frontend SDK foundation + GraphQL sync endpoints + Phase 0 Mobile + Phase 1 Backend/Frontend GraphQL completed)
+**Progress**: ~65% (Backend foundation + Frontend SDK foundation + GraphQL sync endpoints + Phase 0 Mobile + Phase 1 Backend/Frontend GraphQL + OfflineFirstSpaceService completed)
 
 Comprehensive offline-first architecture implementation for the trackhub super app ecosystem using GraphQL CRUD with local-first data synchronization.
 
@@ -21,11 +21,14 @@ Comprehensive offline-first architecture implementation for the trackhub super a
 
 ## Architecture Summary
 
-**Source of Truth (Client)**: Local DB (WatermelonDB on React Native)  
+**Source of Truth (Client)**: Local DB (WatermelonDB on React Native) - **One DB per tenant**  
 **Server**: GraphQL CRUD + bulk sync endpoints (pull/push)  
-**Sync Pattern**: Outbox (client) + Batching push + Incremental pull (since timestamp/version)  
-**Conflict Strategy**: Per-domain rule (default: lastWriteWins for personal data, server merge for collaborative data, manual merge for critical data)  
+**Sync Pattern**: Operation Queue (client) + Atomic two-way sync (push before pull) + Incremental pull (since timestamp/version hash)  
+**Conflict Strategy**: Timestamp-based auto-resolve (server newer → server wins, local newer → local wins, equal → user choose)  
+**Tenant Isolation**: Strict separation - each tenant has separate WatermelonDB instance  
 **Media/Files**: Separate upload (multipart / signed URL) via background uploader queue
+
+📖 [View Detailed Architecture Design](./offline-first-architecture.md)
 
 ## Phases
 
@@ -40,10 +43,12 @@ Establish foundational infrastructure: local database setup, data conventions, o
 
 **Key Deliverables**:
 - ✅ WatermelonDB setup with encryption key management (✅ Completed)
-- ✅ Base schema definitions (✅ Outbox, Upload, SyncState tables)
-- ✅ Outbox manager API (✅ OutboxService with full CRUD)
+- ✅ Base schema definitions (✅ OperationQueue, Upload, SyncState tables)
+- ✅ Operation queue manager API (✅ OperationQueueService with full CRUD)
 - ✅ Network detection system (✅ NetworkService with debouncing)
 - ✅ Sync worker skeleton (✅ SyncWorker with polling and lifecycle)
+- ⏳ Multi-tenant DB isolation (Pending - needs per-tenant DB instances)
+- ⏳ UUID v7 client ID generation (Pending - currently using tmp- prefix)
 
 **Completed**:
 - ✅ BE-0.1: Global Data Conventions defined and implemented (Backend)
@@ -57,7 +62,7 @@ Establish foundational infrastructure: local database setup, data conventions, o
 ---
 
 ### Phase 1: Basic Sync
-**Status**: `IN_PROGRESS[]` (Backend GraphQL endpoints completed ✅ for Space, Frontend GraphQL service ready ✅)  
+**Status**: `IN_PROGRESS[]` (Backend GraphQL endpoints ✅ + Frontend GraphQL service ✅ + OfflineFirstSpaceService ✅ completed for Space)  
 **Estimated**: 3-4 weeks  
 **Dependencies**: Phase 0 completed
 
@@ -68,10 +73,15 @@ Implement core sync functionality: GraphQL sync endpoints, client pull/push logi
 **Key Deliverables**:
 - ✅ GraphQL syncPull and syncPush endpoints (✅ Completed for Space entity)
 - ✅ Frontend GraphQL service sync methods (✅ syncPush and syncPull implemented)
-- ⏳ Client sync pull implementation (Pending - Mobile team - WatermelonDB integration)
-- ⏳ Client sync push batching (Pending - Mobile team - Outbox integration)
-- ⏳ Basic sync worker integration (Pending - Mobile team)
-- ⏳ Optimistic UI updates (Pending - Mobile team)
+- ✅ Client sync pull implementation (✅ OfflineFirstSpaceService.syncPull implemented)
+- ✅ Client sync push implementation (✅ OfflineFirstSpaceService.syncPush implemented)
+- ⏳ Atomic two-way sync (push → clear queue → pull → merge) (Pending - needs integration)
+- ⏳ Client sync push batching (Pending - SyncWorker integration)
+- ⏳ Basic sync worker integration (Pending - SyncWorker needs to call syncPush/syncPull)
+- ✅ Optimistic UI updates (✅ OfflineFirstSpaceService provides instant local updates)
+- ⏳ Force sync from server (Pending - Phase 1.5)
+- ⏳ Force push local (Pending - Phase 1.5)
+- ⏳ Online direct create (Pending - Phase 1.6)
 
 **Completed**:
 - ✅ BE-1.3: Versioning & Timestamp Management implemented
@@ -80,6 +90,10 @@ Implement core sync functionality: GraphQL sync endpoints, client pull/push logi
 - ✅ BE-1.2: GraphQL syncPush endpoint implemented (Base controller + Space resolver)
 - ✅ Frontend: GraphQLSpaceService syncPush and syncPull methods
 - ✅ Frontend: SpaceService interface updated with sync methods
+- ✅ Mobile: OfflineFirstSpaceService implemented (WatermelonDB + Outbox integration)
+- ✅ Mobile: syncPull logic implemented (applies server changes to local DB)
+- ✅ Mobile: syncPush logic implemented (maps clientId to serverId)
+- ✅ Mobile: UI components updated to use offline-first service
 
 ---
 
@@ -197,13 +211,20 @@ type ConflictPayload {
 ### Core Tables
 
 1. **Entity tables** (e.g., `spaces`, `users`, etc.)
-   - Fields: `id`, `client_id`, `version`, `updated_at`, `is_deleted`, plus entity-specific fields
+   - Fields: `id` (server UUID), `client_id` (UUID v7 for offline creates), `version`, `updated_at`, `is_deleted`, plus entity-specific fields
+   - **Tenant isolation**: Each tenant has separate DB instance (`trackhub_db_{tenantId}`)
 
-2. **`outbox`** (mutation queue)
-   - Fields: `id`, `entity`, `payload` (JSON), `status` (pending/sending/failed/success), `attempts`, `lastError`, `createdAt`, `updatedAt`
+2. **`operation_queue`** (mutation queue - replaces outbox)
+   - Fields: `id`, `entity`, `operation` (insert/update/delete), `entity_id`, `payload` (JSON), `status` (pending/sending/failed/success), `attempts`, `last_error`, `created_at`, `updated_at`
 
-3. **`uploads`** (media queue)
+3. **`sync_state`** (sync metadata per entity)
+   - Fields: `entity`, `lastSyncAt`, `serverVersionHash`, `updatedAt`
+
+4. **`uploads`** (media queue)
    - Fields: `id`, `localPath`, `remoteUrl`, `status`, `attempts`, `meta`
+
+5. **`conflicts`** (conflict records for user resolution)
+   - Fields: `id`, `entity`, `entity_id`, `local_data`, `server_data`, `local_version`, `server_version`, `conflict_type`, `resolved`, `created_at`
 
 ## Task Tracking System
 
@@ -326,16 +347,27 @@ When working on a task:
 
 - ✅ **Airplane mode**: Create/update/delete flows, then restore connectivity
 - ✅ **Partial sync**: Fail batch mid-way and resume
-- ✅ **Conflict cases**: Client and server changed same field
+- ✅ **Conflict cases**: Client and server changed same field (timestamp-based resolution)
 - ✅ **Media upload**: Offline add photo, then sync
 - ✅ **Network flakiness**: Switch wifi/4G frequently
 - ✅ **Large batch**: 10k local changes sync test
 - ✅ **App lifecycle**: Device rotation, app kills mid-sync, background/foreground resume
 - ✅ **Schema migration**: Schema change test
 - ✅ **Multiple devices**: Same user across devices change same entity
+- ⏳ **Multi-tenant isolation**: 2 tenants sync separately, no cross-tenant data leak
+- ⏳ **Force sync**: Force from server overwrites local, force push local overrides server
+- ⏳ **Online direct create**: Online creates get server ID immediately
+- ⏳ **UUID v7**: Offline creates use UUID v7 (not random numeric)
 
 ## Related Documentation
 
+- 📖 [**Architecture Design**](./offline-first-architecture.md) - **START HERE** - Comprehensive architecture specification
+- [Epic Overview](./offline-first-epic.md) - High-level epic breakdown
+- [Phase 0: Foundation](./offline-first-phase-0-foundation.md) - Foundation setup tasks
+- [Phase 1: Basic Sync](./offline-first-phase-1-basic-sync.md) - Core sync implementation
+- [Phase 2: Robustness](./offline-first-phase-2-robustness.md) - Conflict resolution & reliability
+- [Phase 3: UX & QA](./offline-first-phase-3-ux-qa.md) - User experience & testing
+- [Phase 4: Performance & Monitoring](./offline-first-phase-4-performance-monitoring.md) - Monitoring & optimization
 - [Mobile Architecture](../mobile/architecture.md)
 - [Data Strategy](../data-strategy.md)
 - [Security Documentation](../security.md)
@@ -346,22 +378,35 @@ When working on a task:
 
 ### Common Patterns
 
-**Enqueue Mutation**:
+**Create Entity (Online)**:
 ```typescript
-const clientId = await enqueueMutation('Space', {
-  name: 'My Space',
-  description: 'Created offline',
-});
+// If online: Direct GraphQL call, get server ID
+const serverId = await createEntity('Space', { name: 'My Space' });
 ```
 
-**Sync Pull**:
+**Create Entity (Offline)**:
 ```typescript
-await syncPull('Space');
+// If offline: Generate UUID v7, queue operation
+const clientId = await createEntity('Space', { name: 'My Space' });
+// clientId is UUID v7, will be mapped to server ID on sync
 ```
 
-**Sync Push**:
+**Atomic Two-Way Sync**:
 ```typescript
-await syncPush(); // Processes all pending outbox items
+// Push → Clear queue → Pull → Merge
+await syncService.syncAll('Space');
+```
+
+**Force Sync from Server**:
+```typescript
+// Skip push, pull all, replace local (with user confirmation)
+await syncService.forceSyncFromServer('Space');
+```
+
+**Force Push Local**:
+```typescript
+// Push all local changes, override server (with user confirmation)
+await syncService.forcePushLocal('Space');
 ```
 
 ### Key Metrics to Monitor
