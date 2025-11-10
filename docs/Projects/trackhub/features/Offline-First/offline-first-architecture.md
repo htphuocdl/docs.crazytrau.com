@@ -475,69 +475,154 @@ function ConflictDiffModal({ conflict, onResolve }) {
 
 ---
 
-## 6. Create Online Direct Push
+## 6. Local-First CRUD Operations
 
-### 6.1 Online vs Offline Create
+### 6.1 Pure Offline-First Pattern
+
+**Core Principle**: Always write to WatermelonDB first, then sync to server via syncPush/syncPull. No direct GraphQL mutations.
 
 | Requirement | Implementation |
 |------------|----------------|
-| **Online creating** | If online → call GraphQL `createBeforeLocal` → server returns `id` → insert local with server `id` |
-| **Offline creating** | If offline → generate UUID v7 local → push queue |
+| **All operations** | Always create/update/delete in local DB first → queue operation → sync via syncPush |
+| **Client ID** | Always generate UUID v7 for new entities (offline or online) |
+| **Server ID mapping** | Server ID returned from syncPush maps clientId → serverId |
 | **ID format** | **MUST use UUID v7** (not random numeric) for clean identity merge |
 
-### 6.2 Implementation
+### 6.2 Implementation Pattern
 
+**Create Entity (Always Local-First)**:
 ```typescript
 async createEntity(entity: string, data: any): Promise<string> {
-  if (NetworkService.isOnline()) {
-    // Online: Create on server first, get server ID
-    const result = await graphql.createEntity({ entity, data });
-    const serverId = result.id;
-    
-    // Insert into local DB with server ID
-    await db.write(async () => {
-      await db.collections.get(entity).create(record => {
-        Object.assign(record, {
-          ...data,
-          id: serverId,
-          serverId: serverId,
-          version: result.version,
-          updatedAt: result.updatedAt,
-        });
+  // ALWAYS create locally first (offline-first pattern)
+  const clientId = generateUUIDv7();
+  
+  // Insert into local DB with client ID
+  await db.write(async () => {
+    await db.collections.get(entity).create(record => {
+      Object.assign(record, {
+        ...data,
+        clientId: clientId,
+        version: 1,
+        updatedAt: Date.now(),
+        isDeleted: false,
       });
     });
-    
-    return serverId;
-  } else {
-    // Offline: Generate UUID v7 client ID
-    const clientId = generateUUIDv7();
-    
-    // Insert into local DB with client ID
-    await db.write(async () => {
-      await db.collections.get(entity).create(record => {
-        Object.assign(record, {
-          ...data,
-          clientId: clientId,
-          version: 1,
-          updatedAt: Date.now(),
-        });
-      });
+  });
+  
+  // Queue operation for sync (will be pushed via syncPush)
+  await OperationQueue.enqueue({
+    entity,
+    operation: 'insert',
+    entityId: clientId,
+    payload: {
+      ...data,
+      clientId,
+      version: 1,
+      isDeleted: false,
+    },
+  });
+  
+  // Trigger immediate sync if online (optional, for better UX)
+  if (NetworkService.isOnline() && this.syncAll) {
+    setTimeout(() => this.syncAll(entity), 500); // Background sync
+  }
+  
+  return clientId; // Return clientId immediately, serverId will be mapped on sync
+}
+```
+
+**Update Entity (Always Local-First)**:
+```typescript
+async updateEntity(id: string, update: any): Promise<Entity> {
+  // Find entity in local DB
+  const entity = await db.collections.get('entities').find(id);
+  
+  // Update in local DB
+  await db.write(async () => {
+    await entity.update(record => {
+      record.version = (record.version || 1) + 1;
+      record.updatedAt = new Date();
+      // Apply update fields
+      Object.assign(record, update);
     });
-    
-    // Queue operation for sync
-    await OperationQueue.enqueue({
-      entity,
-      operation: 'insert',
-      entityId: clientId,
-      payload: data,
+  });
+  
+  // Queue update operation
+  await OperationQueue.enqueue({
+    entity: 'Entity',
+    operation: 'update',
+    entityId: id,
+    payload: {
+      id: entity.serverId || entity.clientId,
+      clientId: entity.clientId,
+      ...update,
+      version: entity.version - 1, // Send current version before increment
+      isDeleted: false,
+    },
+  });
+  
+  // Trigger immediate sync if online (optional)
+  if (NetworkService.isOnline() && this.syncAll) {
+    setTimeout(() => this.syncAll('Entity'), 500);
+  }
+  
+  return this.getEntity(id);
+}
+```
+
+**Delete Entity (Always Local-First)**:
+```typescript
+async deleteEntity(id: string): Promise<void> {
+  // Soft delete in local DB
+  const entity = await db.collections.get('entities').find(id);
+  
+  await db.write(async () => {
+    await entity.update(record => {
+      record.isDeleted = true;
+      record.version = (record.version || 1) + 1;
+      record.updatedAt = new Date();
     });
-    
-    return clientId;
+  });
+  
+  // Queue delete operation
+  await OperationQueue.enqueue({
+    entity: 'Entity',
+    operation: 'delete',
+    entityId: id,
+    payload: {
+      id: entity.serverId || entity.clientId,
+      clientId: entity.clientId,
+      isDeleted: true,
+      version: entity.version - 1,
+    },
+  });
+  
+  // Trigger immediate sync if online (optional)
+  if (NetworkService.isOnline() && this.syncAll) {
+    setTimeout(() => this.syncAll('Entity'), 500);
   }
 }
 ```
 
-### 6.3 UUID v7 Generation
+### 6.3 Benefits of Pure Local-First Pattern
+
+**Advantages**:
+- ✅ **Consistency**: All operations follow the same pattern (local → queue → sync)
+- ✅ **Simplicity**: No need to handle two different code paths (online vs offline)
+- ✅ **Reliability**: Works seamlessly offline, no special handling needed
+- ✅ **Optimistic UI**: Instant local updates, sync happens in background
+- ✅ **Conflict handling**: All conflicts handled uniformly via syncPush response
+
+**Sync Flow**:
+1. User creates/updates/deletes → Local DB updated immediately
+2. Operation queued in OperationQueue
+3. Background sync worker calls `syncPush` (batches operations)
+4. Server processes and returns server IDs + versions
+5. Local DB updated with server IDs
+6. `syncPull` fetches any server changes
+7. Local DB merged with server changes
+
+### 6.4 UUID v7 Generation
 
 **Why UUID v7?**
 - Time-ordered (better for sorting/indexing)
@@ -956,8 +1041,9 @@ class SyncEventManager {
 | **Conflict: same record both update** | Show user choose modal with diff |
 | **Force from server** | Local fully replaced, no data loss |
 | **Force push local** | Server accept local override, then sync normal |
-| **Online create** | Direct GraphQL call, server ID returned |
-| **Offline create** | UUID v7 generated, queued for sync |
+| **Create (online/offline)** | Always create in WatermelonDB first with UUID v7, queue operation, sync via syncPush |
+| **Update (online/offline)** | Always update in WatermelonDB first, queue operation, sync via syncPush |
+| **Delete (online/offline)** | Always soft delete in WatermelonDB first, queue operation, sync via syncPush |
 | **Network flakiness** | Retry with exponential backoff, no duplicates |
 | **Large batch (10k items)** | Batched correctly, all sync successfully |
 | **App killed during sync** | Resume on restart, no data loss |

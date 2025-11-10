@@ -13,7 +13,7 @@ This section contains detailed epic breakdown, task tracking, checklists, and ac
 **Status**: `IN_PROGRESS[]` (Backend GraphQL Endpoints + Frontend GraphQL Service + OfflineFirstSpaceService + Shared SyncService Completed for Space)  
 **Priority**: `URGENT[]` (High)  
 **Epic ID**: `EPIC-OFFLINE-001`  
-**Progress**: ~75% (Backend foundation + Frontend SDK foundation + GraphQL sync endpoints + Phase 0 Mobile + Phase 1 Backend/Frontend GraphQL + OfflineFirstSpaceService + Shared SyncService + OperationQueue + Atomic Sync + Force Sync + Online Direct Create completed)
+**Progress**: ~75% (Backend foundation + Frontend SDK foundation + GraphQL sync endpoints + Phase 0 Mobile + Phase 1 Backend/Frontend GraphQL + OfflineFirstSpaceService + Shared SyncService + OperationQueue + Atomic Sync + Force Sync + Local-First CRUD completed)
 
 Comprehensive offline-first architecture implementation for the trackhub super app ecosystem using GraphQL CRUD with local-first data synchronization.
 
@@ -21,9 +21,9 @@ Comprehensive offline-first architecture implementation for the trackhub super a
 
 ## Architecture Summary
 
-**Source of Truth (Client)**: Local DB (WatermelonDB on React Native) - **One DB per tenant**  
-**Server**: GraphQL CRUD + bulk sync endpoints (pull/push)  
-**Sync Pattern**: Operation Queue (client) + Atomic two-way sync (push before pull) + Incremental pull (since timestamp/version hash)  
+**Source of Truth (Client)**: Local DB (WatermelonDB on React Native) - **One DB per tenant** - **Always write to local DB first**  
+**Server**: GraphQL bulk sync endpoints (syncPush/syncPull) - **No direct mutations**  
+**Sync Pattern**: **Pure Local-First** - All CRUD operations → WatermelonDB → OperationQueue → syncPush → syncPull  
 **Conflict Strategy**: Timestamp-based auto-resolve (server newer → server wins, local newer → local wins, equal → user choose)  
 **Tenant Isolation**: Strict separation - each tenant has separate WatermelonDB instance  
 **Media/Files**: Separate upload (multipart / signed URL) via background uploader queue
@@ -62,7 +62,7 @@ Establish foundational infrastructure: local database setup, data conventions, o
 ---
 
 ### Phase 1: Basic Sync
-**Status**: `IN_PROGRESS[]` (Backend GraphQL endpoints ✅ + Frontend GraphQL service ✅ + OfflineFirstSpaceService ✅ + Shared SyncService ✅ + Atomic Sync ✅ + Force Sync ✅ + Online Direct Create ✅ completed for Space)  
+**Status**: `IN_PROGRESS[]` (Backend GraphQL endpoints ✅ + Frontend GraphQL service ✅ + OfflineFirstSpaceService ✅ + Shared SyncService ✅ + Atomic Sync ✅ + Force Sync ✅ + Local-First CRUD ✅ completed for Space)  
 **Estimated**: 3-4 weeks  
 **Dependencies**: Phase 0 completed
 
@@ -83,7 +83,7 @@ Implement core sync functionality: GraphQL sync endpoints, client pull/push logi
 - ✅ Optimistic UI updates (✅ OfflineFirstSpaceService provides instant local updates)
 - ✅ Force sync from server (✅ OfflineFirstSpaceService.forceSyncFromServer implemented)
 - ✅ Force push local (✅ OfflineFirstSpaceService.forcePushLocal implemented)
-- ✅ Online direct create (✅ OfflineFirstSpaceService.createSpace with online/offline logic)
+- ✅ Local-first CRUD operations (✅ OfflineFirstSpaceService - always create/update/delete in WatermelonDB first, then sync)
 - ✅ UUID v7 client ID generation (✅ entityDefaults.ts updated with UUID v7 support)
 
 **Completed**:
@@ -359,7 +359,7 @@ When working on a task:
 - ✅ **Multiple devices**: Same user across devices change same entity
 - ⏳ **Multi-tenant isolation**: 2 tenants sync separately, no cross-tenant data leak
 - ⏳ **Force sync**: Force from server overwrites local, force push local overrides server
-- ⏳ **Online direct create**: Online creates get server ID immediately
+- ⏳ **Local-first CRUD**: All operations create/update/delete in WatermelonDB first, then sync via syncPush
 - ⏳ **UUID v7**: Offline creates use UUID v7 (not random numeric)
 
 ## Related Documentation
@@ -381,17 +381,29 @@ When working on a task:
 
 ### Common Patterns
 
-**Create Entity (Online)**:
+**Create Entity (Always Local-First)**:
 ```typescript
-// If online: Direct GraphQL call, get server ID
-const serverId = await createEntity('Space', { name: 'My Space' });
+// Always: Create in local DB first, queue operation, sync later
+const clientId = await createEntity('Space', { name: 'My Space' });
+// clientId is UUID v7, will be mapped to server ID on syncPush
+// If online, sync happens immediately in background
+// If offline, sync happens when network is restored
 ```
 
-**Create Entity (Offline)**:
+**Update Entity (Always Local-First)**:
 ```typescript
-// If offline: Generate UUID v7, queue operation
-const clientId = await createEntity('Space', { name: 'My Space' });
-// clientId is UUID v7, will be mapped to server ID on sync
+// Always: Update local DB first, queue operation, sync later
+await updateEntity(spaceId, { name: 'Updated Name' });
+// Local DB updated immediately, operation queued
+// Server updated via syncPush in background
+```
+
+**Delete Entity (Always Local-First)**:
+```typescript
+// Always: Soft delete in local DB first, queue operation, sync later
+await deleteEntity(spaceId);
+// Local DB marked as deleted immediately, operation queued
+// Server updated via syncPush in background
 ```
 
 **Atomic Two-Way Sync**:

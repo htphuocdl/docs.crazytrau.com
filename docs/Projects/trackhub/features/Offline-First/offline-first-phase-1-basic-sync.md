@@ -596,51 +596,76 @@ Are you sure?
 
 ---
 
-### RN-1.6: Implement Online Direct Create
+### RN-1.6: Implement Local-First CRUD Operations
 
 **Status**: `TODO[x]` ✅ (Completed for Space entity)  
 **Owner**: Mobile Team Lead  
 **Effort**: 3 days
 
-**Description**: If online, create entity directly on server and get server ID. If offline, generate UUID v7 and queue.
+**Description**: Implement pure local-first pattern - always create/update/delete in WatermelonDB first, then queue operation for sync. No direct GraphQL mutations.
 
 **Checklist**:
-- [x] Check network status before create (✅ Uses NetworkService.isOnline())
-- [x] If online: Call GraphQL `createEntity` directly (✅ OfflineFirstSpaceService.createSpace)
-- [x] Get server ID from response (✅ Returns server ID immediately)
-- [x] Insert into local DB with server ID (✅ Creates local record with serverId)
-- [x] If offline: Generate UUID v7 client ID (✅ Uses generateClientId with UUID v7)
+- [x] Always create in local DB first (✅ OfflineFirstSpaceService.createSpace)
+- [x] Generate UUID v7 client ID for all creates (✅ Uses generateClientId with UUID v7)
 - [x] Insert into local DB with client ID (✅ Creates local record with clientId)
 - [x] Queue operation for sync (✅ Uses OperationQueueService.enqueue)
+- [x] Update local DB first for updates (✅ OfflineFirstSpaceService.updateSpace)
+- [x] Queue update operations (✅ OperationQueueService.enqueue with 'update')
+- [x] Soft delete in local DB first (✅ OfflineFirstSpaceService.deleteSpace)
+- [x] Queue delete operations (✅ OperationQueueService.enqueue with 'delete')
+- [x] Trigger immediate sync if online (optional, for better UX) (✅ Background sync)
 - [x] Update all LocalServices to use this pattern (✅ OfflineFirstSpaceService updated)
-- [ ] Test online create flow (Pending)
-- [ ] Test offline create flow (Pending)
+- [ ] Test create flow (Pending)
+- [ ] Test update flow (Pending)
+- [ ] Test delete flow (Pending)
 - [ ] Write unit tests (Pending)
 
 **Acceptance Criteria**:
-- Online creates get server ID immediately
-- Offline creates use UUID v7 (not random numeric)
-- Operations are queued correctly for offline creates
+- All creates use UUID v7 client ID (not random numeric)
+- All operations are queued correctly
+- Local DB is always updated first (optimistic UI)
+- Server sync happens via syncPush in background
 - No duplicate IDs
+- Works seamlessly offline and online
 
 **Implementation**:
 ```typescript
 async createEntity(entity: string, data: any): Promise<string> {
-  if (NetworkService.isOnline()) {
-    // Online: Create on server first
-    const result = await graphql.createEntity({ entity, data });
-    // Insert local with server ID
-    await this.insertLocal({ ...data, id: result.id, serverId: result.id });
-    return result.id;
-  } else {
-    // Offline: Generate UUID v7
-    const clientId = generateUUIDv7();
-    // Insert local with client ID
-    await this.insertLocal({ ...data, clientId });
-    // Queue for sync
-    await OperationQueue.enqueue({ entity, operation: 'insert', entityId: clientId, payload: data });
-    return clientId;
+  // ALWAYS create locally first (pure offline-first pattern)
+  const clientId = generateUUIDv7();
+  
+  // Insert into local DB with client ID
+  await db.write(async () => {
+    await db.collections.get(entity).create(record => {
+      Object.assign(record, {
+        ...data,
+        clientId: clientId,
+        version: 1,
+        updatedAt: Date.now(),
+        isDeleted: false,
+      });
+    });
+  });
+  
+  // Queue operation for sync (will be pushed via syncPush)
+  await OperationQueue.enqueue({
+    entity,
+    operation: 'insert',
+    entityId: clientId,
+    payload: {
+      ...data,
+      clientId,
+      version: 1,
+      isDeleted: false,
+    },
+  });
+  
+  // Trigger immediate sync if online (optional, for better UX)
+  if (NetworkService.isOnline() && this.syncAll) {
+    setTimeout(() => this.syncAll(entity), 500); // Background sync
   }
+  
+  return clientId; // Return clientId immediately, serverId mapped on sync
 }
 ```
 
@@ -679,7 +704,7 @@ async createEntity(entity: string, data: any): Promise<string> {
 - [ ] lastSyncAt persistence
 - [ ] Force sync from server
 - [ ] Force push local
-- [ ] Online direct create
+- [ ] Local-first CRUD operations
 - [ ] Offline create with UUID v7
 
 ### Integration Tests
@@ -708,7 +733,7 @@ async createEntity(entity: string, data: any): Promise<string> {
 4. ⏳ Atomic two-way sync (push → clear → pull → merge)
 5. ⏳ Basic sync worker integration
 6. ⏳ Force sync (from server + push local)
-7. ⏳ Online direct create
+7. ⏳ Local-first CRUD operations
 8. ⏳ Optimistic UI updates
 9. ⏳ Basic retry logic
 

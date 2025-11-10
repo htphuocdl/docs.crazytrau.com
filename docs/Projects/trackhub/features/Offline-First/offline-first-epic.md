@@ -21,10 +21,10 @@ Implement a comprehensive offline-first architecture for the trackhub super app 
 
 ### Architecture Overview
 
-**Source of Truth (Client)**: Local DB (WatermelonDB on React Native)  
-**Server**: GraphQL CRUD + bulk sync endpoints (pull/push)  
-**Sync Pattern**: Outbox (client) + Batching push + Incremental pull (since timestamp/version)  
-**Conflict Strategy**: Per-domain rule (default: lastWriteWins for personal data, server merge for collaborative data, manual merge for critical data)  
+**Source of Truth (Client)**: Local DB (WatermelonDB on React Native) - **Always write to local DB first**  
+**Server**: GraphQL bulk sync endpoints (syncPush/syncPull) - **No direct mutations**  
+**Sync Pattern**: **Pure Local-First** - All CRUD operations → WatermelonDB → OperationQueue → syncPush → syncPull  
+**Conflict Strategy**: Timestamp-based auto-resolve (server newer → server wins, local newer → local wins, equal → user choose)  
 **Media/Files**: Separate upload (multipart / signed URL) via background uploader queue
 
 ### Business Value
