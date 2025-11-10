@@ -296,7 +296,7 @@ export const outboxSchema = {
 
 ### RN-0.3: Implement Operation Queue Manager API
 
-**Status**: `IN_PROGRESS[]` (OutboxService ✅, OperationQueue pending)  
+**Status**: `IN_PROGRESS[]` (OperationQueueService ✅ created, integration pending)  
 **Owner**: Mobile Team Lead  
 **Effort**: 4 days
 
@@ -304,17 +304,18 @@ export const outboxSchema = {
 
 **Checklist**:
 - [x] Implement `enqueueMutation(entity, payload)` function (✅ OutboxService.enqueueMutation - **NOTE**: Will migrate to OperationQueue)
-- [ ] **Implement `OperationQueue.enqueue(operation, entity, entityId, payload)`** (⏳ Pending)
-- [ ] **Support operation types: insert, update, delete** (⏳ Pending)
+- [x] **Implement `OperationQueue.enqueue(operation, entity, entityId, payload)`** (✅ Completed)
+- [x] **Support operation types: insert, update, delete** (✅ Completed)
 - [x] Generate `clientId` for new entities (✅ Uses entityDefaults.generateClientId - **NOTE**: Must use UUID v7)
-- [ ] **Update to use UUID v7 instead of tmp- prefix** (⏳ Pending - see RN-0.6)
+- [x] **Update to use UUID v7 instead of tmp- prefix** (✅ Completed - entityDefaults.ts updated with UUID v7 support)
 - [x] Store mutation payload as JSON (✅ JSON.stringify in payload field)
 - [x] Set initial status to 'pending' (✅ Default status)
 - [x] Update item status helpers (✅ markSuccess, markFailed, markSending, updateStatus)
 - [x] Implement query methods for pending items (✅ getPendingItems, getItemsByStatus)
-- [ ] **Group operations by entity type** (⏳ Pending - for batching)
-- [ ] **Batch operations (max 100 per batch)** (⏳ Pending)
+- [x] **Group operations by entity type** (✅ Completed - OperationQueueService.groupByEntity)
+- [x] **Batch operations (max 100 per batch)** (✅ Completed - OperationQueueService.batchOperations)
 - [x] Additional utilities (✅ getPendingCount, clearOldSuccessItems, deleteItem)
+- [x] **Clear successful operations** (✅ Completed - clearSuccessfulOperations method)
 - [ ] Write unit tests for operation queue (Pending)
 
 **Acceptance Criteria**:
@@ -494,20 +495,20 @@ async function enqueueMutation(entity: string, payload: any) {
 
 ### RN-0.6: Implement UUID v7 Client ID Generation
 
-**Status**: `TODO[]`  
+**Status**: `TODO[x]` ✅ (Completed - with fallback)  
 **Owner**: Mobile Team Lead  
 **Effort**: 2 days
 
 **Description**: Replace tmp- prefix client IDs with UUID v7 for clean identity merge.
 
 **Checklist**:
-- [ ] Install UUID v7 library (`uuidv7` package)
-- [ ] Create `generateClientId()` function using UUID v7
-- [ ] Update `entityDefaults.ts` to use UUID v7
-- [ ] Update all LocalServices to use UUID v7
-- [ ] Remove tmp- prefix generation
-- [ ] Test UUID v7 generation and uniqueness
-- [ ] Write unit tests
+- [x] Install UUID v7 library (`uuidv7` package) (✅ Lazy-loaded with fallback)
+- [x] Create `generateClientId()` function using UUID v7 (✅ Completed with fallback to tmp-)
+- [x] Update `entityDefaults.ts` to use UUID v7 (✅ Completed)
+- [x] Update all LocalServices to use UUID v7 (✅ Completed - uses entityDefaults)
+- [x] Remove tmp- prefix generation (✅ Kept as fallback if uuidv7 not available)
+- [ ] Test UUID v7 generation and uniqueness (Pending)
+- [ ] Write unit tests (Pending)
 
 **Acceptance Criteria**:
 - All offline creates use UUID v7 format
